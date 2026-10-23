@@ -1,131 +1,160 @@
-﻿# dsh-ssh-remote
+# dsh-ssh-plugin
 
-缁?**DeepSeek Harness锛圖SH锛?* 鏅鸿兘浣撶敤鐨?SSH 鑳藉姏锛氭墽琛屽懡浠ゃ€佷笂浼犱笅杞芥枃浠讹紝**绉侀挜/鍙ｄ护涓嶈繘鍏ユā鍨嬩笂涓嬫枃**銆?鑷甫渚ф爮闈㈡澘锛氫富鏈虹鐞嗐€佽繛鎺ユ祴璇曚笌杩炴帴鏃ュ織銆佸懡浠ら粦鍚嶅崟銆佸嵄闄╁懡浠ょ瓥鐣ャ€佸璁¤褰曘€?
-- 浼犺緭灞傦細`ssh2`锛堥粯璁わ紝璺ㄥ钩鍙颁竴鑷淬€佽繛鎺ュ鐢ㄣ€佸師鐢?SFTP锛? 绯荤粺 OpenSSH锛堝彲閫夊悗绔級
-- 褰㈡€侊細DSH bundle锛圚ost 鍗婂尯 + Client 鍗婂尯锛夛紝涓€涓寘鍚屾椂鎻愪緵宸ュ叿涓?UI
-- 渚濊禆锛氫粎 `ssh2`锛涚己澶辨椂鑷姩闄嶇骇鍒扮郴缁?OpenSSH 瀹㈡埛绔?
+给 **DeepSeek Harness（DSH）** 智能体用的 SSH 能力：执行命令、上传下载文件，**私钥/口令不进入模型上下文**。
+自带侧栏面板：主机管理、连接测试与连接日志、命令黑名单、危险命令策略、审计记录。
+
+- 传输层：`ssh2`（默认，跨平台一致、连接复用、原生 SFTP）+ 系统 OpenSSH（可选后端）
+- 形态：DSH bundle（Host 半区 + Client 半区），一个包同时提供工具与 UI
+- 依赖：仅 `ssh2`；缺失时自动降级到系统 OpenSSH 客户端
+
 ---
 
-## 1. 瀹冭В鍐充粈涔堥棶棰?
-璁╂櫤鑳戒綋鑳界洿鎺ユ搷浣滄湇鍔″櫒锛堥儴缃层€佹帓闅溿€佷紶鏂囦欢锛夛紝浣?*妯″瀷姘歌繙鐪嬩笉鍒板瘑閽?*锛?
-| 瑙掕壊 | 鑳界湅鍒颁粈涔?|
+## 1. 它解决什么问题
+
+让智能体能直接操作服务器（部署、排障、传文件），但**模型永远看不到密钥**：
+
+| 角色 | 能看到什么 |
 |---|---|
-| 妯″瀷 / 瀵硅瘽 | 鍙湁涓绘満鍒悕锛堝 `9929`锛夊拰鍛戒护杈撳嚭 |
-| 娴忚鍣ㄩ潰鏉?| 鍒悕銆佸湴鍧€銆佽璇?*寮曠敤鍚?*锛堢幆澧冨彉閲忓悕 / 鍑嵁鍚?/ 绉侀挜璺緞锛夛紝涓嶅洖鏄惧瘑閽ュ唴瀹?|
-| Host 杩涚▼ | 鐪熸鐨勭閽ヤ笌鍙ｄ护锛涘彧鍦ㄦ湰鏈哄唴瀛橀噷鐢ㄤ簬鎻℃墜 |
+| 模型 / 对话 | 只有主机别名（如 `9929`）和命令输出 |
+| 浏览器面板 | 别名、地址、认证**引用名**（环境变量名 / 凭据名 / 私钥路径），不回显密钥内容 |
+| Host 进程 | 真正的私钥与口令；只在本机内存里用于握手 |
 
 ---
 
-## 2. 蹇€熷紑濮嬶紙3 姝ワ級
+## 2. 快速开始（3 步）
 
-1. **瀹夎**锛堣 搂3锛夆啋 鍒锋柊 DSH 椤甸潰 鈫?宸︿晶鏍忓嚭鐜?`SSH` 鍥炬爣
-2. **鍔犱富鏈?*锛氶潰鏉裤€屾柊澧炪€嶁啋 濉埆鍚?鍦板潃/鐢ㄦ埛 鈫?璁よ瘉鏂瑰紡閫夈€岀洿鎺ョ矘璐寸閽ャ€嶆垨銆岀洿鎺ヨ緭鍏ュ瘑鐮併€嶁啋 **娴嬭瘯杩炴帴** 鈫?淇濆瓨
-3. **璁╂櫤鑳戒綋骞叉椿**锛氬湪瀵硅瘽閲岃
+1. **安装**（见 §3）→ 刷新 DSH 页面 → 左侧栏出现 `SSH` 图标
+2. **加主机**：面板「新增」→ 填别名/地址/用户 → 认证方式选「直接粘贴私钥」或「直接输入密码」→ **测试连接** → 保存
+3. **让智能体干活**：在对话里说
 
-   > 杩炴帴 9929锛屽府鎴戦儴缃茶繖涓湇鍔?https://github.com/xxx/yyy
+   > 连接 9929，帮我部署这个服务 https://github.com/xxx/yyy
 
-   妯″瀷浼氳嚜宸辫皟鐢?`ssh_hosts` / `ssh_exec` / `ssh_put`锛屽叏绋嬪彧鐢ㄥ埆鍚嶃€?
+   模型会自己调用 `ssh_hosts` / `ssh_exec` / `ssh_put`，全程只用别名。
+
 ---
 
-## 3. 瀹夎涓庨儴缃?
-涓夌鏂瑰紡锛屾寜銆岃兘鍚﹁仈缃戙€嶃€屾槸鍚︽効鎰忔壒鏋勫缓鑴氭湰銆嶉€夈€傚畬鏁寸増瑙?**[DEPLOY.md](./DEPLOY.md)**銆?
-### 鏂瑰紡 A锛氭嫹璐濊嚜甯︿緷璧栫殑鐩綍锛堟帹鑽愶紝绂荤嚎鍙敤锛?
+## 3. 安装与部署
+
+三种方式，按「能否联网」「是否愿意批构建脚本」选。完整版见 **[DEPLOY.md](./DEPLOY.md)**。
+
+### 方式 A：拷贝自带依赖的目录（推荐，离线可用）
+
 ```bash
-# 鍦ㄦ湁缃戠粶鐨勬満鍣ㄤ笂鍏堟瀯寤轰竴娆★紙浼氱敓鎴?dist/dsh-ssh-remote锛屽惈 node_modules锛?git clone https://github.com/Dalld/dsh-ssh-remote.git
-cd dsh-ssh-remote
+# 在有网络的机器上先构建一次（会生成 dist/dsh-ssh-plugin，含 node_modules）
+git clone https://github.com/Dalld/dsh-ssh-plugin.git
+cd dsh-ssh-plugin
 npm install --omit=dev --ignore-scripts
-npm run prepare:dist        # 浜х墿锛歞ist/dsh-ssh-remote
+npm run prepare:dist        # 产物：dist/dsh-ssh-plugin
 ```
 
-鎶?`dist/dsh-ssh-remote` 鏁翠釜鐩綍鎷峰埌鐩爣鏈猴紝鐒跺悗鍦ㄧ洰鏍囨満 DSH 閲岋細
+把 `dist/dsh-ssh-plugin` 整个目录拷到目标机，然后在目标机 DSH 里：
 
 ```
-plugin_manager install_bundle D:\dsh-plugins\dsh-ssh-remote
+plugin_manager install_bundle D:\dsh-plugins\dsh-ssh-plugin
 ```
 
-鐩綍瀹夎璧?`link:`锛屼笉浼氶噸瑁呬緷璧栵紝**涓嶄細瑙﹀彂鏋勫缓瀹℃壒**锛岄€傚悎绂荤嚎/鍐呯綉銆?
-### 鏂瑰紡 B锛氱洿鎺ユ寚鍚戞簮鐮佺洰褰曪紙寮€鍙戠敤锛?
-```bash
-git clone https://github.com/Dalld/dsh-ssh-remote.git
-cd dsh-ssh-remote
-npm install --omit=dev --ignore-scripts   # ssh2 绾?JS 鍗冲彲锛屼笉闇€瑕佺紪璇?```
+目录安装走 `link:`，不会重装依赖，**不会触发构建审批**，适合离线/内网。
 
-```
-plugin_manager install_bundle <浠撳簱缁濆璺緞>
-```
-
-### 鏂瑰紡 C锛歯pm 鍖?/ 鎻掍欢甯傚満
+### 方式 B：直接指向源码目录（开发用）
 
 ```bash
-npm i -g dsh-ssh-remote   # 鎴栧彂甯冨埌甯傚満鍚庣敱甯傚満瀹夎
+git clone https://github.com/Dalld/dsh-ssh-plugin.git
+cd dsh-ssh-plugin
+npm install --omit=dev --ignore-scripts   # ssh2 纯 JS 即可，不需要编译
 ```
 
-鐩爣鏈哄畨瑁呮椂 pnpm 浼氳嚜鍔ㄨ `ssh2`锛岄娆″彲鑳芥彁绀?`pendingBuilds: cpu-features, ssh2`
-锛堝彲閫夊師鐢熷姞閫熸ā鍧楋級銆傚厑璁稿嵆鍙紱涓嶅厑璁镐篃鑳界敤锛屾彃浠惰嚜鍔ㄩ€€鍥?OpenSSH 鍚庣銆?
-### 鐜瑕佹眰
-
-| 椤?| 瑕佹眰 |
-|---|---|
-| DSH | 鈮?`0.2.1-rc.2` |
-| Node | 鈮?20锛圖SH 鑷甫锛?|
-| 绯荤粺 | Windows 10+ / macOS / Linux |
-| 鍙€?| 绯荤粺 OpenSSH 瀹㈡埛绔紙娌℃湁 ssh2 鏃朵娇鐢級 |
-
----
-
-## 4. 闈㈡澘
-
-| 鍖哄煙 | 鍐呭 |
-|---|---|
-| 椤舵爮 | 鎼滅储銆佸埛鏂般€佸鍏?`~/.ssh/config`銆佹柊澧?|
-| 宸︽爮 | 涓绘満鍒楄〃锛堟寚绾规槸鍚﹀凡璁板綍銆佸彧璇绘爣璁般€佸垎缁勮繃婊わ級 |
-| 鍙虫爮 | 涓绘満璇︽儏 + **娴嬭瘯杩炴帴**锛堝惈杩炴帴鏃ュ織锛? 缂栬緫/鍒犻櫎 |
-| 绛栫暐鍗?| 浼犺緭鍚庣銆佸嵄闄╁懡浠ょ瓥鐣ャ€佷富鏈烘寚绾圭瓥鐣ャ€佽繛鎺ュ鐢?|
-| 榛戝悕鍗曞崱 | 姝ｅ垯鍙鍒犮€佸彲鎭㈠榛樿锛堝唴缃?20 鏉★紝鍚?PowerShell 瑙勫垯锛?|
-| 鏈€杩戞椿鍔?| 鎶樺彔鐨勫璁℃憳瑕?|
-
-**娴嬭瘯杩炴帴**浼氱湡鐨勮繛涓€娆″苟杈撳嚭鏃ュ織锛屼緥濡傦細
-
 ```
-[    0ms] 鍚庣 ssh2 路 鐩爣 root@1.2.3.4:22
-[    0ms] 绛栫暐锛氭寚绾?accept-new 路 瓒呮椂 20000ms
-[    0ms] 宸茶褰曚富鏈烘寚绾?SHA256:s2OgX2EON...
-[ 1729ms] 鎻℃墜瀹屾垚 路 涓绘満瀵嗛挜 SHA256:s2OgX2EON...
-[ 1729ms] 涓绘満鎸囩汗涓庤褰曚竴鑷?[ 1729ms] 璁よ瘉鎴愬姛 路 鏂瑰紡 password:cred
-[ 3317ms] 杩滅鍥炴樉 exit 0 路 1588ms
-[ 3317ms] 瀹屾垚
+plugin_manager install_bundle <仓库绝对路径>
 ```
 
----
+### 方式 C：npm 一条命令
 
-## 5. 宸ュ叿锛堟ā鍨嬪彲瑙侊級
+```bash
+plugin_manager install_bundle dsh-ssh-plugin
+```
 
-| 宸ュ叿 | 浣滅敤 |
+目标机安装时 pnpm 会自动装 `ssh2`，首次可能提示 `pendingBuilds: cpu-features, ssh2`
+（可选原生加速模块）。允许即可；不允许也能用，插件自动退回 OpenSSH 后端。
+
+### 环境要求
+
+| 项 | 要求 |
 |---|---|
-| `ssh_hosts` | 鍒楀嚭鍒悕銆佽璇佹柟寮忋€佸彧璇?鍒嗙粍銆佸凡璁板綍鎸囩汗锛沗probe: true` 鐪熷疄杩炴帴 |
-| `ssh_exec` | 鎵ц鍛戒护锛堟敮鎸?`stdin`銆乣cwd`銆佽秴鏃躲€佽緭鍑轰笂闄愶級 |
-| `ssh_put` / `ssh_get` | 涓婁笅浼狅紱`recursive` 浼犵洰褰曪紝`verify` 姣斿 sha256 |
-| `ssh_doctor` | 璇婃柇锛氬彲鐢ㄤ紶杈撳眰涓庣増鏈€佹暟鎹洰褰曘€乲nown_hosts銆侀€愪富鏈哄氨缁儏鍐?|
+| DSH | ≥ `0.2.1-rc.2` |
+| Node | ≥ 20（DSH 自带） |
+| 系统 | Windows 10+ / macOS / Linux |
+| 可选 | 系统 OpenSSH 客户端（没有 ssh2 时使用） |
 
-鍙傛暟 schema 閲?*娌℃湁浠讳綍瀵嗛挜瀛楁** 鈥斺€?妯″瀷鑳界粰鐨勬渶鏁忔劅鎯呮姤鍙槸涓€涓埆鍚嶃€?
 ---
 
-## 6. 瀹夊叏妯″瀷
+## 4. 面板
 
-1. **璁よ瘉鏉愭枡鍙湪 Host 杩涚▼瑙ｆ瀽**锛屽叡鍏鏉ユ簮锛?   `keyCred`锛堥潰鏉跨矘璐寸閽?鈫?DSH 鍑嵁搴擄級銆乣passwordCred`锛堥潰鏉胯緭鍏ュ瘑鐮?鈫?鍑嵁搴擄級銆?   `keyEnv` / `passwordEnv`锛堢幆澧冨彉閲忓悕锛夈€乣keyPath`锛堟湰鏈虹閽ユ枃浠讹級銆乣agent`锛坰sh-agent锛夈€?2. **鍑哄彛缁熶竴鑴辨晱**锛氱瀵嗗€?鈫?`[redacted:secret]`锛宍dataDir`/绉侀挜璺緞/涓存椂璺緞 鈫?`[redacted:path]`锛?   PEM 鍧?鈫?`[redacted:private-key]`銆傚伐鍏风粨鏋溿€侀敊璇俊鎭€佽繛鎺ユ棩蹇楅兘杩囪繖涓€灞傘€?3. **TOFU 鎸囩汗**锛歚accept-new` 涓嬮娆¤繛鎺ユ垚鍔熷嵆璁板綍鎸囩汗锛屼箣鍚庢瘡娆℃瘮瀵癸紱涓嶄竴鑷寸洿鎺ユ嫆缁濊繛鎺ャ€?4. **瀹¤**锛歚<dataDir>/audit.jsonl`锛?600锛夎褰?exec/put/get/probe 鐨勬椂闂淬€侀€€鍑虹爜銆佽€楁椂銆佽劚鏁忓懡浠ゃ€?5. **鍛戒护绛栫暐**锛歚dangerPolicy: deny | ask | allow`锛屽懡涓粦鍚嶅崟鏃舵嫆缁?/ 杞?DSH 瀹℃壒 / 鏀捐锛?   涓绘満鍙 `mode: readonly` 鎷掔粷鍐欐搷浣溿€?
-> 杈圭晫锛氭櫤鑳戒綋鑷繁鏈夋枃浠惰鍐欏伐鍏凤紝纾佺洏涓婂瓨鍦ㄧ殑绉侀挜瀹冩湰鏉ュ氨鑳借銆傛湰鎻掍欢淇濊瘉鐨勬槸
-> 銆屼笉鏂板鍓湰銆佷笉鎵撳嵃浣嶇疆銆佷笉鎶婂瘑閽ュ杩涚粨鏋溿€嶃€傞粦鍚嶅崟涓庡彧璇绘ā寮忔槸妯″紡鍖归厤锛?*涓嶆槸娌欑**銆?
+| 区域 | 内容 |
+|---|---|
+| 顶栏 | 搜索、刷新、导入 `~/.ssh/config`、新增 |
+| 左栏 | 主机列表（指纹是否已记录、只读标记、分组过滤） |
+| 右栏 | 主机详情 + **测试连接**（含连接日志）+ 编辑/删除 |
+| 策略卡 | 传输后端、危险命令策略、主机指纹策略、连接复用 |
+| 黑名单卡 | 正则可增删、可恢复默认（内置 20 条，含 PowerShell 规则） |
+| 最近活动 | 折叠的审计摘要 |
+
+**测试连接**会真的连一次并输出日志，例如：
+
+```
+[    0ms] 后端 ssh2 · 目标 root@1.2.3.4:22
+[    0ms] 策略：指纹 accept-new · 超时 20000ms
+[    0ms] 已记录主机指纹 SHA256:s2OgX2EON...
+[ 1729ms] 握手完成 · 主机密钥 SHA256:s2OgX2EON...
+[ 1729ms] 主机指纹与记录一致
+[ 1729ms] 认证成功 · 方式 password:cred
+[ 3317ms] 远端回显 exit 0 · 1588ms
+[ 3317ms] 完成
+```
+
 ---
 
-## 7. 閰嶇疆鍙傝€?
-鍐欏湪鎻掍欢琛岀殑 `config`锛圷AML锛夛紝鎴栬闈㈡澘鍐?`<dataDir>/settings.json`锛堥潰鏉夸紭鍏堢骇鏇撮珮锛屽嵆鏃剁敓鏁堬級銆?
+## 5. 工具（模型可见）
+
+| 工具 | 作用 |
+|---|---|
+| `ssh_hosts` | 列出别名、认证方式、只读/分组、已记录指纹；`probe: true` 真实连接 |
+| `ssh_exec` | 执行命令（支持 `stdin`、`cwd`、超时、输出上限） |
+| `ssh_put` / `ssh_get` | 上下传；`recursive` 传目录，`verify` 比对 sha256 |
+| `ssh_doctor` | 诊断：可用传输层与版本、数据目录、known_hosts、逐主机就绪情况 |
+
+参数 schema 里**没有任何密钥字段** —— 模型能给的最敏感情报只是一个别名。
+
+---
+
+## 6. 安全模型
+
+1. **认证材料只在 Host 进程解析**，共六种来源：
+   `keyCred`（面板粘贴私钥 → DSH 凭据库）、`passwordCred`（面板输入密码 → 凭据库）、
+   `keyEnv` / `passwordEnv`（环境变量名）、`keyPath`（本机私钥文件）、`agent`（ssh-agent）。
+2. **出口统一脱敏**：秘密值 → `[redacted:secret]`，`dataDir`/私钥路径/临时路径 → `[redacted:path]`，
+   PEM 块 → `[redacted:private-key]`。工具结果、错误信息、连接日志都过这一层。
+3. **TOFU 指纹**：`accept-new` 下首次连接成功即记录指纹，之后每次比对；不一致直接拒绝连接。
+4. **审计**：`<dataDir>/audit.jsonl`（0600）记录 exec/put/get/probe 的时间、退出码、耗时、脱敏命令。
+5. **命令策略**：`dangerPolicy: deny | ask | allow`，命中黑名单时拒绝 / 转 DSH 审批 / 放行；
+   主机可设 `mode: readonly` 拒绝写操作。
+
+> 边界：智能体自己有文件读写工具，磁盘上存在的私钥它本来就能读。本插件保证的是
+> 「不新增副本、不打印位置、不把密钥塞进结果」。黑名单与只读模式是模式匹配，**不是沙箱**。
+
+---
+
+## 7. 配置参考
+
+写在插件行的 `config`（YAML），或让面板写 `<dataDir>/settings.json`（面板优先级更高，即时生效）。
+
 ```yaml
 config:
   transport: ssh2            # ssh2 | openssh | auto
   hostKeyPolicy: accept-new  # accept-new | strict | off
   dangerPolicy: deny         # allow | ask | deny
   audit: true
-  multiplex: false           # 浠?OpenSSH 鍚庣锛圥OSIX锛?  defaultTimeoutMs: 30000
+  multiplex: false           # 仅 OpenSSH 后端（POSIX）
+  defaultTimeoutMs: 30000
   connectTimeoutMs: 20000
   maxOutputBytes: 200000
   hosts:
@@ -133,7 +162,8 @@ config:
       host: 1.2.3.4
       port: 22
       user: root
-      keyCred: DSH_SSH_PROD_KEY   # 闈㈡澘绮樿创绉侀挜鍚庤嚜鍔ㄧ敓鎴愮殑寮曠敤鍚?      mode: readonly              # default | readonly
+      keyCred: DSH_SSH_PROD_KEY   # 面板粘贴私钥后自动生成的引用名
+      mode: readonly              # default | readonly
       group: prod
     - alias: winbox
       host: 10.0.0.12
@@ -142,40 +172,53 @@ config:
       shell: powershell           # posix | powershell | cmd
 ```
 
-鍗曚富鏈哄彲閫夛細`keyEnv` `keyPath` `keyCred` `passphraseEnv` `passwordEnv` `passwordCred` `agent`
-`timeoutMs` `connectTimeoutMs` `maxOutputBytes` `defaultCwd` `shell` `mode` `group` `enabled`銆?
-閰嶇疆鏄?*涓ユ牸**鐨勶細鏈煡瀛楁銆侀潪娉?host/user/port銆佸潖 JSON 閮戒細鏄庣‘鎶ラ敊锛屼笉闈欓粯蹇界暐銆?
-### 鏁版嵁鐩綍
+单主机可选：`keyEnv` `keyPath` `keyCred` `passphraseEnv` `passwordEnv` `passwordCred` `agent`
+`timeoutMs` `connectTimeoutMs` `maxOutputBytes` `defaultCwd` `shell` `mode` `group` `enabled`。
 
-`<profile>/ssh/`锛歚hosts.json`銆乣known_hosts`銆乣settings.json`銆乣audit.jsonl`銆乣cm/`锛圤penSSH 澶嶇敤濂楁帴瀛楋級銆?
-杩佺Щ鍒版柊鏈哄櫒鏃讹紝鍓嶄笁涓枃浠跺彲鏁寸洰褰曟嫹璐濓紱**鍑嵁搴撻噷鐨勫瘑閽?瀵嗙爜涓嶅彲杩佺Щ**锛岄渶瑕侀噸濉紝
-鎴栨敼鐢?`keyPath` / `keyEnv`銆?
+配置是**严格**的：未知字段、非法 host/user/port、坏 JSON 都会明确报错，不静默忽略。
+
+### 数据目录
+
+`<profile>/ssh/`：`hosts.json`、`known_hosts`、`settings.json`、`audit.jsonl`、`cm/`（OpenSSH 复用套接字）。
+
+迁移到新机器时，前三个文件可整目录拷贝；**凭据库里的密钥/密码不可迁移**，需要重填，
+或改用 `keyPath` / `keyEnv`。
+
 ---
 
-## 8. 涓庡悓绫绘柟妗堢殑姣旇緝
+## 8. 与同类方案的比较
 
-| | 鏈彃浠讹紙ssh2 榛樿锛?| 绾?OpenSSH CLI | 妗岄潰缁堢锛圵ezTerm/Tabby锛?|
+| | 本插件（ssh2 默认） | 纯 OpenSSH CLI | 桌面终端（WezTerm/Tabby） |
 |---|---|---|---|
-| 妯″瀷鍙敤 | 鉁?宸ュ叿鍖?| 鉁?浣嗛渶鑷繁鎷煎懡浠?| 鉂?|
-| 杩炴帴澶嶇敤 | 鉁?杩涚▼鍐呰繛鎺ユ睜 | 浠?POSIX | 鉁?|
-| SFTP | 鉁?鍘熺敓 | scp | 鉁?|
-| 瀵嗛挜闅旂 | 鉁?涓嶈惤鐩樸€佽劚鏁?| 鉁?鏂囦欢 | 鈥?|
-| 绠楁硶闈?| libssh2锛團IDO/鏂?KEX 婊炲悗锛?| 璺熺郴缁?| 涓よ€呯殕鏈?|
+| 模型可用 | ✅ 工具化 | ✅ 但需自己拼命令 | ❌ |
+| 连接复用 | ✅ 进程内连接池 | 仅 POSIX | ✅ |
+| SFTP | ✅ 原生 | scp | ✅ |
+| 密钥隔离 | ✅ 不落盘、脱敏 | ✅ 文件 | — |
+| 算法面 | libssh2（FIDO/新 KEX 滞后） | 跟系统 | 两者皆有 |
 
-`transport: auto` 浼氬湪 ssh2 缂哄け鏃惰嚜鍔ㄩ檷鍒?OpenSSH銆?
+`transport: auto` 会在 ssh2 缺失时自动降到 OpenSSH。
+
 ---
 
-## 9. 宸茬煡闄愬埗
+## 9. 已知限制
 
-- 榛戝悕鍗?鍙鏄ā寮忓尮閰嶏紝鑳借缁曡繃锛涗笉瑕佸綋浣滃畨鍏ㄨ竟鐣屻€?- `known_hosts` 鍙鐞嗘湰鎻掍欢鍐欏叆鐨勬槑鏂囨潯鐩紙鍝堝笇鍖?`|1|鈥 鏉＄洰鍖归厤涓嶅埌锛夈€?- Windows 涓?OpenSSH 鍚庣娌℃湁杩炴帴澶嶇敤涓庡彲闈犲彛浠よ璇侊紙鐢?ssh2 鍗冲彲锛夈€?- 鐩綍閫掑綊浼犺緭銆佹柇鐐圭画浼犮€佺鍙ｈ浆鍙戝伐鍏峰皻鏈疄鐜般€?- 闈㈡澘鏂囨鐩墠涓轰腑鏂囷紝鏈蛋 Client locale 鏈嶅姟銆?
+- 黑名单/只读是模式匹配，能被绕过；不要当作安全边界。
+- `known_hosts` 只处理本插件写入的明文条目（哈希化 `|1|…` 条目匹配不到）。
+- Windows 上 OpenSSH 后端没有连接复用与可靠口令认证（用 ssh2 即可）。
+- 目录递归传输、断点续传、端口转发工具尚未实现。
+- 面板文案目前为中文，未走 Client locale 服务。
+
 ---
 
-## 10. 寮€鍙?
+## 10. 开发
+
 ```bash
 npm install --omit=dev --ignore-scripts
-node test/smoke.mjs     # 绂荤嚎娴嬭瘯锛氬伐鍏锋敞鍐屻€佺瓥鐣ャ€佹寚绾瑰簱銆佽缃€侀潰鏉?API銆佽劚鏁?```
+node test/smoke.mjs     # 离线测试：工具注册、策略、指纹库、设置、面板 API、脱敏
+```
 
-鐪熸満楠岃瘉璁板綍瑙?[DEPLOY.md](./DEPLOY.md#楠岃瘉娓呭崟瑁呭畬鑷) 涓庢彁浜ゅ巻鍙层€?
+真机验证记录见 [DEPLOY.md](./DEPLOY.md#验证清单装完自检)。
+
 ## License
 
 MIT

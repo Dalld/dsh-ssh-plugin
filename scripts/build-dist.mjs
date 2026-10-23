@@ -1,5 +1,5 @@
 /**
- * 生成自带依赖的发布目录：dist/dsh-ssh-remote/
+ * 生成自带依赖的发布目录：dist/dsh-ssh-plugin/
  *
  * 目标：拷到别的电脑后用 `plugin_manager install_bundle <目录>` 即可，
  * 不触发 pnpm 的构建脚本审批（ssh2 纯 JS 可用，不需要原生模块）。
@@ -12,7 +12,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-const dist = path.join(root, 'dist', 'dsh-ssh-remote')
+const dist = path.join(root, 'dist', 'dsh-ssh-plugin')
 const FILES = ['index.js', 'client.js', 'package.json', 'cordis.patch.yml', 'icon.svg', 'README.md', 'DEPLOY.md', 'LICENSE', 'lib', 'locale']
 
 /** 只保留运行期需要的文件，避免把 test/ 和本地 node_modules 一起搬过去（覆盖写，不删目录）。 */
@@ -37,7 +37,7 @@ async function stamp() {
   const file = path.join(dist, 'DEPLOY-HINT.txt')
   const pkg = JSON.parse(await readFile(path.join(dist, 'package.json'), 'utf8'))
   await writeFile(file, [
-    `dsh-ssh-remote ${pkg.version}`,
+    `dsh-ssh-plugin ${pkg.version}`,
     '',
     '在目标机器上执行：',
     `  plugin_manager install_bundle ${path.join(dist)}`,

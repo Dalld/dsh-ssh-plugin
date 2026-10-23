@@ -1,4 +1,4 @@
-# dsh-ssh-remote：给智能体的 SSH 能力（密钥只留在 Host 进程里）
+# dsh-ssh-plugin：给智能体的 SSH 能力（密钥只留在 Host 进程里）
 #
 # 传输：transport: ssh2（默认，跨平台一致）| openssh（系统客户端）| auto
 # 认证四选一，写在 hosts 条目里。推荐用环境变量名而不是路径：
@@ -12,7 +12,7 @@
 
 - insert:
     - id: ssh-remote
-      name: 'dsh-ssh-remote'
+      name: 'dsh-ssh-plugin'
       config:
         transport: ssh2
         hostKeyPolicy: accept-new    # accept-new | strict | off

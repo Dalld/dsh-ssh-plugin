@@ -1,7 +1,7 @@
 // dsh-ssh 前端半区：侧栏图标 + 主机管理面板（列表 / 详情双栏）。
 // 只与 Host 侧 /dsh-ssh/api 通信；密钥内容不经过浏览器存储。
 window.__ModuleLoader__.load({
-  id: 'dsh-ssh-remote',
+  id: 'dsh-ssh-plugin',
   factory(require) {
     const React = require('react')
     const h = React.createElement

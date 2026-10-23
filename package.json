@@ -1,6 +1,6 @@
-﻿{
-  "name": "dsh-ssh-remote",
-  "version": "0.7.0",
+{
+  "name": "dsh-ssh-plugin",
+  "version": "0.7.1",
   "description": "SSH for DSH agents: run commands and move files over SSH while private keys stay inside the Host process. ssh2 transport with an optional system-OpenSSH backend.",
   "license": "MIT",
   "type": "module",
@@ -18,7 +18,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Dalld/dsh-ssh-remote.git"
+    "url": "git+https://github.com/Dalld/dsh-ssh-plugin.git"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "exports": {
     ".": "./index.js",
