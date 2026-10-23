@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="SSH Remote">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1f2a44"/>
+      <stop offset="1" stop-color="#0d1420"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bg)"/>
+  <rect x="9" y="12" width="46" height="32" rx="6" fill="none" stroke="#5ad1a8" stroke-width="2.5"/>
+  <path d="M16 22l6 5-6 5" fill="none" stroke="#5ad1a8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M27 33h10" stroke="#5ad1a8" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="40" cy="45" r="9" fill="#0d1420" stroke="#f0c24b" stroke-width="2.5"/>
+  <circle cx="40" cy="45" r="3" fill="#f0c24b"/>
+  <path d="M46.5 50.5L53 57" stroke="#f0c24b" stroke-width="3" stroke-linecap="round"/>
+  <path d="M50 54l-3.5 1.5" stroke="#f0c24b" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

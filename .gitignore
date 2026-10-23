@@ -1,0 +1,12 @@
+# 依赖与构建产物
+node_modules/
+*.tgz
+dist/
+
+# 测试/本地运行时产物
+test/.runtime/
+*.log
+
+# 系统
+.DS_Store
+Thumbs.db

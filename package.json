@@ -1,0 +1,65 @@
+﻿{
+  "name": "dsh-ssh-remote",
+  "version": "0.7.0",
+  "description": "SSH for DSH agents: run commands and move files over SSH while private keys stay inside the Host process. ssh2 transport with an optional system-OpenSSH backend.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20",
+    "dsh": ">=0.2.1-rc.2"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "ssh",
+    "sftp",
+    "remote",
+    "deepseek-harness"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dalld/dsh-ssh-remote.git"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "lib",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "DEPLOY.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "ssh2": "^1.17.0"
+  },
+  "dependenciesMeta": {
+    "ssh2": {
+      "built": false
+    },
+    "cpu-features": {
+      "built": false
+    }
+  },
+  "scripts": {
+    "test": "node test/smoke.mjs",
+    "prepare:dist": "node scripts/build-dist.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true
+    }
+  }
+}

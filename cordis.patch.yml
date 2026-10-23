@@ -1,0 +1,32 @@
+# dsh-ssh-remote：给智能体的 SSH 能力（密钥只留在 Host 进程里）
+#
+# 传输：transport: ssh2（默认，跨平台一致）| openssh（系统客户端）| auto
+# 认证四选一，写在 hosts 条目里。推荐用环境变量名而不是路径：
+#   keyEnv:  SSH_KEY_PROD          # 环境变量里放的是私钥 PEM 文本
+#   keyPath: C:\Users\me\.ssh\id_ed25519
+#   agent: true                    # 用 ssh-agent 里已加载的密钥
+#   passwordEnv: SSH_PASS_PROD     # 仅 ssh2 后端的 Windows 上也可用
+# 以上字段只在本机解析，不会出现在任何工具参数或工具结果里。
+#
+# 大多数设置也可以在侧栏 SSH 面板里改（写入 <dataDir>/settings.json，不用重启）。
+
+- insert:
+    - id: ssh-remote
+      name: 'dsh-ssh-remote'
+      config:
+        transport: ssh2
+        hostKeyPolicy: accept-new    # accept-new | strict | off
+        dangerPolicy: deny           # allow | ask | deny
+        audit: true
+        defaultTimeoutMs: 30000
+        connectTimeoutMs: 20000
+        maxOutputBytes: 200000
+        hosts: []
+        # hosts:
+        #   - alias: prod
+        #     host: TARGET_HOST
+        #     port: 22
+        #     user: root
+        #     keyEnv: SSH_KEY_PROD
+        #     mode: readonly           # default | readonly
+        #     group: prod
